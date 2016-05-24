@@ -13,6 +13,8 @@ public interface CommandProcessor {
 
     String commandPattern();
 
+    String commandArgumentsPattern();
+
     int argumentsCount();
 
     void process(Task task, Session session) throws Exception;

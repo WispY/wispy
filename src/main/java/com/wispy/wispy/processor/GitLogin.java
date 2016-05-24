@@ -18,7 +18,7 @@ public class GitLogin implements CommandProcessor {
 
     @Override
     public String commandUsage() {
-        return "/git login {name} {password}";
+        return "login {name} {password}";
     }
 
     @Override
@@ -28,7 +28,12 @@ public class GitLogin implements CommandProcessor {
 
     @Override
     public String commandPattern() {
-        return "/git login (\\S+) (\\S+)";
+        return "login.*";
+    }
+
+    @Override
+    public String commandArgumentsPattern() {
+        return "login (\\S+) (\\S+)";
     }
 
     @Override

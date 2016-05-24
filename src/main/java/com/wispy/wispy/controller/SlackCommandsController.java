@@ -40,11 +40,11 @@ public class SlackCommandsController {
 
     @Autowired
     public void setProcessors(List<CommandProcessor> processors) {
-        this.processors = processors.stream().collect(toMap(p -> p, p -> compile("$" + p.commandPattern() + "^")));
+        this.processors = processors.stream().collect(toMap(p -> p, p -> compile("^" + p.commandPattern() + "$")));
         StringBuilder builder = new StringBuilder();
         builder.append("Usage:\n");
         for (CommandProcessor processor : processors) {
-            builder.append("`").append(processor.commandUsage()).append("`\n")
+            builder.append("`/git ").append(processor.commandUsage()).append("`\n")
                     .append("       ").append(processor.commandDescription()).append("\n");
         }
         usage = builder.toString();
@@ -67,21 +67,18 @@ public class SlackCommandsController {
         if (!token.equals(slackToken)) {
             return answer("Invalid team token");
         }
-        String input = command + " " + arguments;
-        CommandProcessor processor = pickProcessor(input);
+        CommandProcessor processor = pickProcessor(arguments);
         if (processor == null) {
-            return answer("Bad request. " + usage);
+            return answer("Unknown command\n" + usage);
         }
 
         Session session = getOrCreateSession(user);
-        Task task = createTask(processor, input);
+        Task task = createTask(processor, arguments);
         try {
-            task.log("executing: {0}", input);
             processor.process(task, session);
         } catch (Exception up) {
-            task.log("failed to execute command: {0}", input);
             task.log(up);
-            task.append("Failed to execute: `{0}`", input);
+            task.append("Failed to execute command: `{0}`", up.getMessage());
         }
 
         return answer(hide(task.buildOutput(), task.getHiddenWords()));
@@ -97,7 +94,7 @@ public class SlackCommandsController {
     }
 
     private Task createTask(CommandProcessor processor, String input) {
-        Matcher matcher = processors.get(processor).matcher(input);
+        Matcher matcher = Pattern.compile(processor.commandArgumentsPattern()).matcher(input);
         String[] arguments = new String[processor.argumentsCount()];
         if (!matcher.find()) {
             for (int index = 0; index < arguments.length; index++) {
