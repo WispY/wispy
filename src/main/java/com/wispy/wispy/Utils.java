@@ -1,25 +1,35 @@
 package com.wispy.wispy;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
-import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.HttpStatus.OK;
 
 /**
  * @author Leonid_Poliakov
  */
 public class Utils {
+    private static Gson gson = new GsonBuilder().create();
+
     public static ResponseEntity<String> badRequest(String message) {
-        return new ResponseEntity<>(message, BAD_REQUEST);
+        return success(message);
     }
 
     public static ResponseEntity<String> internalError(Throwable throwable) {
-        return new ResponseEntity<>("Internal error: `" + throwable.getMessage() + "`", INTERNAL_SERVER_ERROR);
+        return success("Internal error: `" + throwable.getMessage() + "`");
     }
 
     public static ResponseEntity<String> success(String message) {
-        return new ResponseEntity<>(message, OK);
+        return new ResponseEntity<>(json(answer(message)), OK);
+    }
+
+    public static SlackAnswer answer(String text) {
+        SlackAnswer answer = new SlackAnswer();
+        answer.setText(text);
+        return answer;
     }
 
     public static String text(List<String> lines) {
@@ -41,4 +51,9 @@ public class Utils {
         }
         return builder.toString();
     }
+
+    public static String json(Object object) {
+        return gson.toJson(object);
+    }
+
 }

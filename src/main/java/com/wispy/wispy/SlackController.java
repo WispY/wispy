@@ -180,9 +180,11 @@ public class SlackController {
             }
 
             HttpPost post = new HttpPost(callbackUrl);
+            post.setHeader("content-type", "application/json");
             post.setEntity(new StringEntity(result.getBody(), "UTF-8"));
             try {
                 LOG.info("Calling: " + callbackUrl);
+                LOG.info("Callback body: " + result.getBody());
                 HttpResponse response = callbackClient.execute(post);
                 String body = null;
                 HttpEntity entity = response.getEntity();
