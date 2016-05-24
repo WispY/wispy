@@ -237,12 +237,16 @@ public class SlackController {
 
             String originUrl = "https://" + credentials.getName() + ":" + credentials.getPassword() + "@github.com/" + origin.getFullName();
             String forkUrl = "https://" + credentials.getName() + ":" + credentials.getPassword() + "@github.com/" + fork.getFullName();
+            GHMyself myself = github.getMyself();
 
             Utils.cli(new File("."), "git clone " + originUrl + " " + localHome.getAbsolutePath());
 
             Set<String> remoteRepoNames = getRemoteRepoNames(localHome);
             String targetRemoteRepo = remoteRepoNames.contains("upstream") ? "upstream" : "origin";
             LOG.info("Target remote repo to push: " + targetRemoteRepo);
+
+            cli(localHome, "git config user.email \"" + myself.getEmail() + "\"");
+            cli(localHome, "git config user.name \"" + myself.getLogin() + "\"");
 
             cli(localHome, "git status");
             cli(localHome, "git pull --all");
