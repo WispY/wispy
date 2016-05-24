@@ -1,5 +1,8 @@
 package com.wispy.wispy;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -168,18 +171,25 @@ public class SlackController {
 
     private void executeAsync(String callbackUrl, AsyncExecution execution) {
         executors.execute(() -> {
-            ResponseEntity<String> response;
+            ResponseEntity<String> result;
             try {
-                response = execution.execute();
+                result = execution.execute();
             } catch (Exception up) {
                 LOG.error("Command processing error", up);
-                response = internalError(up);
+                result = internalError(up);
             }
 
             HttpPost post = new HttpPost(callbackUrl);
-            post.setEntity(new StringEntity(response.getBody(), "UTF-8"));
+            post.setEntity(new StringEntity(result.getBody(), "UTF-8"));
             try {
-                callbackClient.execute(post);
+                LOG.info("Calling: " + callbackUrl);
+                HttpResponse response = callbackClient.execute(post);
+                String body = null;
+                HttpEntity entity = response.getEntity();
+                if (entity != null) {
+                    body = IOUtils.toString(entity.getContent(), "UTF-8");
+                }
+                LOG.info("Callback url answer: " + response.getStatusLine() + ": " + body);
             } catch (IOException up) {
                 LOG.error("Failed to post to callback url: " + callbackUrl, up);
             }
