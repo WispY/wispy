@@ -52,10 +52,11 @@ public class SlackController {
     );
 
     @Value("${slack.token}") private String slackToken;
+    @Value("${github.organization}") private String gitOrganization;
 
     private Map<String, GitHub> sessions;
     private Map<String, Map<Integer, GHPullRequest>> requests;
-    private ExecutorService executors = Executors.newFixedThreadPool(1);
+    private ExecutorService executors = Executors.newFixedThreadPool(10);
     private HttpClient callbackClient = HttpClientBuilder.create().build();
 
     @PostConstruct
@@ -129,16 +130,12 @@ public class SlackController {
         }
 
         executeAsync(callbackUrl, () -> {
-            List<String> output = new LinkedList<>();
-            Map<String, GHRepository> personalRepositories = github.getMyself().getRepositories();
-            Map<String, GHOrganization> organizations = github.getMyOrganizations();
+            long time = System.currentTimeMillis();
 
-            List<GHRepository> repositories = new LinkedList<>();
-            for (Entry<String, GHOrganization> entry : organizations.entrySet()) {
-                repositories.addAll(entry.getValue().getRepositories().values());
-            }
-            repositories.addAll(personalRepositories.values());
-            output.add("Searched through: `" + repositories.size() + "` repositories.");
+            List<String> output = new LinkedList<>();
+            List<GHRepository> repositories = new LinkedList<GHRepository>();
+            repositories.addAll(github.getOrganization(gitOrganization).getRepositories().values());
+            int repositoryCount = repositories.size();
 
             Map<GHRepository, List<GHPullRequest>> pullRequests = new TreeMap<>((f, s) -> f.getName().compareTo(s.getName()));
 
@@ -158,12 +155,15 @@ public class SlackController {
                 output.add("No open pull requests found.");
             } else {
                 for (Entry<GHRepository, List<GHPullRequest>> entry : pullRequests.entrySet()) {
-                    output.add("`" + entry.getKey().getName() + "`");
+                    output.add(entry.getKey().getName());
                     for (GHPullRequest request : entry.getValue()) {
-                        output.add("  " + request.getTitle());
+                        output.add("> " + request.getTitle());
                     }
                 }
             }
+
+            time = System.currentTimeMillis() - time;
+            output.add(0, "Searched through `" + repositoryCount + "` repositories in `" + time + " ms`");
             return success(text(output));
         });
         return success("Looking through repositories... Please, wait.");
