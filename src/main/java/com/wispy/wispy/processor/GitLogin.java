@@ -22,6 +22,11 @@ public class GitLogin implements CommandProcessor {
     }
 
     @Override
+    public String commandDescription() {
+        return "sign in at GitHub";
+    }
+
+    @Override
     public String commandPattern() {
         return "/git login (\\S+) (\\S+)";
     }
