@@ -1,5 +1,8 @@
-package com.wispy.wispy;
+package com.wispy.wispy.controller;
 
+import com.wispy.wispy.AsyncExecution;
+import com.wispy.wispy.GitCredentials;
+import com.wispy.wispy.Utils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -34,9 +37,10 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
  * @author Leonid_Poliakov
  */
 @Controller
-@RequestMapping("/slack")
+@RequestMapping("/slack-old")
 public class SlackController {
     public static final Logger LOG = Logger.getLogger(SlackController.class);
+
 
     private static String gitUsage = text(
             "`/git login name password`",
