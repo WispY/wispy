@@ -1,0 +1,11 @@
+**/target
+
+**/tmp
+
+*.iml
+**/*/*.iml
+**/.idea/*
+**/generated-content/*
+
+local.properties
+server.jar
