@@ -9,6 +9,8 @@ public interface CommandProcessor {
 
     String commandUsage();
 
+    String commandDescription();
+
     String commandPattern();
 
     int argumentsCount();

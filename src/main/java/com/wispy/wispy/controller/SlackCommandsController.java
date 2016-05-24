@@ -34,12 +34,20 @@ public class SlackCommandsController {
 
     private Map<String, Session> sessions;
     private Map<CommandProcessor, Pattern> processors;
+    private String usage;
 
     @Value("${slack.token}") private String slackToken;
 
     @Autowired
     public void setProcessors(List<CommandProcessor> processors) {
         this.processors = processors.stream().collect(toMap(p -> p, p -> compile("$" + p.commandPattern() + "^")));
+        StringBuilder builder = new StringBuilder();
+        builder.append("Usage:\n");
+        for (CommandProcessor processor : processors) {
+            builder.append("`").append(processor.commandUsage()).append("`\n")
+                    .append("       ").append(processor.commandDescription()).append("\n");
+        }
+        usage = builder.toString();
     }
 
     @PostConstruct
@@ -62,7 +70,7 @@ public class SlackCommandsController {
         String input = command + " " + arguments;
         CommandProcessor processor = pickProcessor(input);
         if (processor == null) {
-            return answer("Unknown command");
+            return answer("Bad request. " + usage);
         }
 
         Session session = getOrCreateSession(user);
