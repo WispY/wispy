@@ -177,6 +177,7 @@ public class SlackController {
                                         (request.getMergeable() ? "" : " `can't merge!`")
                         );
                         listedRequests.add(request);
+                        index++;
                     }
                 }
             }
