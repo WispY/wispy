@@ -35,6 +35,7 @@ public class SlackCommandsController {
     private Map<String, Session> sessions;
     private Map<CommandProcessor, Pattern> processors;
     private String usage;
+    private String description;
 
     @Value("${slack.token}") private String slackToken;
 
@@ -48,6 +49,7 @@ public class SlackCommandsController {
                     .append("       ").append(processor.commandDescription()).append("\n");
         }
         usage = builder.toString();
+        description = "This is a development tool used to automate merging pull request with a nice looking history";
     }
 
     @PostConstruct
@@ -66,6 +68,9 @@ public class SlackCommandsController {
     ) {
         if (!token.equals(slackToken)) {
             return answer("Invalid team token");
+        }
+        if (arguments.trim().isEmpty()) {
+            return answer(description + "\n\n" + usage);
         }
         CommandProcessor processor = pickProcessor(arguments);
         if (processor == null) {
