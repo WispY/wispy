@@ -229,10 +229,12 @@ public class SlackController {
             String forkUrl = "https://" + credentials.getName() + ":" + credentials.getPassword() + "@github.com/" + fork.getFullName();
             Utils.cli(new File("."), "git clone " + forkUrl + " " + repoDir.getAbsolutePath());
 
-            return success("Cloned into: `" + localRepoName + "`");
+            boolean reallyCloned = new File(repoDir, "pom.xml").exists();
+
+            return success("Cloned into: `" + repoDir.getAbsolutePath() + "` (" + reallyCloned + ")");
         });
 
-        return success("Merging pull request " + link(request.getTitle(), request.getHtmlUrl()) + "... Please, wait");
+        return success("Merging " + link(request.getTitle(), request.getHtmlUrl()) + "... Please, wait");
     }
 
     private void executeAsync(String callbackUrl, AsyncExecution execution) {
@@ -249,8 +251,6 @@ public class SlackController {
             post.setHeader("content-type", "application/json");
             post.setEntity(new StringEntity(result.getBody(), "UTF-8"));
             try {
-                LOG.info("Calling: " + callbackUrl);
-                LOG.info("Callback body: " + result.getBody());
                 HttpResponse response = callbackClient.execute(post);
                 String body = null;
                 HttpEntity entity = response.getEntity();
