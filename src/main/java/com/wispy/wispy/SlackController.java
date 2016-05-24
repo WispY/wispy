@@ -1,9 +1,7 @@
 package com.wispy.wispy;
 
 import org.apache.log4j.Logger;
-import org.kohsuke.github.GHMyself;
-import org.kohsuke.github.GHPullRequest;
-import org.kohsuke.github.GitHub;
+import org.kohsuke.github.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -14,8 +12,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.Map.Entry;
 
 import static com.wispy.wispy.Utils.*;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -79,14 +77,15 @@ public class SlackController {
         }
 
         String[] arguments = argumentsString.trim().split("\\s+");
-        if (arguments.length == 0) {
+        if (arguments[0].isEmpty()) {
             return success(gitHelp);
         }
-        LOG.info("Arguments: '" + argumentsString + "'");
         try {
             switch (arguments[0]) {
                 case "login":
                     return executeLogin(user, arguments);
+                case "list":
+                    return executeList(user);
                 default:
                     return badRequest(text("Unknown command: " + arguments[0], gitUsage));
             }
@@ -111,6 +110,50 @@ public class SlackController {
         }
         sessions.put(user, github);
         return success("Connected as: `" + gitUser.getName() + " (" + gitUser.getLogin() + ")`");
+    }
+
+    private ResponseEntity<String> executeList(String user) throws Exception {
+        GitHub github = sessions.get(user);
+        if (github == null) {
+            return badRequest("Please, log in first: `/git login name password`");
+        }
+        List<String> output = new LinkedList<>();
+
+        Map<String, GHRepository> personalRepositories = github.getMyself().getRepositories();
+        Map<String, GHOrganization> organizations = github.getMyOrganizations();
+
+        List<GHRepository> repositories = new LinkedList<>();
+        for (Entry<String, GHOrganization> entry : organizations.entrySet()) {
+            repositories.addAll(entry.getValue().getRepositories().values());
+        }
+        repositories.addAll(personalRepositories.values());
+        output.add("Searched through: `" + repositories.size() + "` repositories.");
+
+        Map<GHRepository, List<GHPullRequest>> pullRequests = new TreeMap<>((f, s) -> f.getName().compareTo(s.getName()));
+
+        Iterator<GHRepository> iterator = repositories.iterator();
+        while (iterator.hasNext()) {
+            GHRepository repository = iterator.next();
+            List<GHPullRequest> requests = repository.getPullRequests(GHIssueState.OPEN);
+            if (requests.isEmpty()) {
+                iterator.remove();
+            } else {
+                Collections.sort(requests, (f, s) -> Integer.compare(f.getNumber(), s.getNumber()));
+                pullRequests.put(repository, requests);
+            }
+        }
+
+        if (pullRequests.isEmpty()) {
+            output.add("No open pull requests found.");
+        } else {
+            for (Entry<GHRepository, List<GHPullRequest>> entry : pullRequests.entrySet()) {
+                output.add("`" + entry.getKey().getName() + "`");
+                for (GHPullRequest request : entry.getValue()) {
+                    output.add("  " + request.getTitle());
+                }
+            }
+        }
+        return success(text(output));
     }
 
 }

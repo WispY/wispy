@@ -2,6 +2,8 @@ package com.wispy.wispy;
 
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
+
 import static org.springframework.http.HttpStatus.*;
 
 /**
@@ -18,6 +20,16 @@ public class Utils {
 
     public static ResponseEntity<String> success(String message) {
         return new ResponseEntity<>(message, OK);
+    }
+
+    public static String text(List<String> lines) {
+        StringBuilder builder = new StringBuilder();
+        String prefix = "";
+        for (String line : lines) {
+            builder.append(prefix).append(line);
+            prefix = "\n";
+        }
+        return builder.toString();
     }
 
     public static String text(String... lines) {
