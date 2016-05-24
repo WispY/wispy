@@ -1,6 +1,7 @@
 package com.wispy.wispy;
 
 import org.apache.log4j.Logger;
+import org.kohsuke.github.GHMyself;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GitHub;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,7 +34,7 @@ public class SlackController {
             "       sign in at GitHub",
             "`/git list`",
             "       show available pull requests",
-            "/git merge id [message]",
+            "`/git merge id [message]`",
             "       merge pull request by id from the list,",
             "       uses request name as commit message by default"
     );
@@ -81,7 +82,7 @@ public class SlackController {
         if (arguments.length == 0) {
             return success(gitHelp);
         }
-        LOG.info("Arguments: " + command);
+        LOG.info("Arguments: '" + argumentsString + "'");
         try {
             switch (arguments[0]) {
                 case "login":
@@ -101,13 +102,15 @@ public class SlackController {
         }
 
         GitHub github;
+        GHMyself gitUser;
         try {
             github = GitHub.connectUsingPassword(arguments[1], arguments[2]);
+            gitUser = github.getMyself();
         } catch (IOException up) {
-            return badRequest("Could not login: " + up.getMessage());
+            return badRequest("Could not login: `" + up.getMessage() + "`");
         }
         sessions.put(user, github);
-        return success("Connected as: " + github.getMyself().getName() + " (" + github.getMyself().getLogin() + ")");
+        return success("Connected as: `" + gitUser.getName() + " (" + gitUser.getLogin() + ")`");
     }
 
 }

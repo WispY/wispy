@@ -13,7 +13,7 @@ public class Utils {
     }
 
     public static ResponseEntity<String> internalError(Throwable throwable) {
-        return new ResponseEntity<>("Internal error: " + throwable.getMessage(), INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>("Internal error: `" + throwable.getMessage() + "`", INTERNAL_SERVER_ERROR);
     }
 
     public static ResponseEntity<String> success(String message) {
