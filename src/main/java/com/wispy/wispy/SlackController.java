@@ -29,18 +29,18 @@ public class SlackController {
     public static final Logger LOG = Logger.getLogger(SlackController.class);
 
     private static String gitUsage = text(
-            "```",
-            "Usage:",
-            "    /git login name password  - sign in at GitHub",
-            "    /git list                 - show available pull requests",
-            "    /git merge id [message]   - merge pull request by id from the list,",
-            "                                uses request name as commit message by default",
-            "```"
+            "`/git login name password`",
+            "       sign in at GitHub",
+            "`/git list`",
+            "       show available pull requests",
+            "/git merge id [message]",
+            "       merge pull request by id from the list,",
+            "       uses request name as commit message by default"
     );
+
     private static String gitHelp = text(
-            "```",
             "This is a development tool used to automate merging pull request with a nice looking history.",
-            "```",
+            "",
             gitUsage
     );
 
@@ -67,20 +67,21 @@ public class SlackController {
             @RequestParam("token") String token,
             @RequestParam("user_id") String user,
             @RequestParam("command") String command,
+            @RequestParam("text") String argumentsString,
             HttpServletRequest request
     ) {
         if (!token.equals(slackToken)) {
             return badRequest("Invalid team token");
         }
-        if (!command.startsWith("/git")) {
+        if (!command.equals("/git")) {
             return badRequest("Invalid team token");
         }
 
-        String[] arguments = command.substring("/git".length()).trim().split("\\s+");
+        String[] arguments = argumentsString.trim().split("\\s+");
         if (arguments.length == 0) {
             return success(gitHelp);
         }
-        LOG.info("Command: " + command);
+        LOG.info("Arguments: " + command);
         try {
             switch (arguments[0]) {
                 case "login":
