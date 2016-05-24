@@ -24,6 +24,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.wispy.wispy.Utils.*;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -154,7 +155,7 @@ public class SlackController {
             long time = System.currentTimeMillis();
 
             List<String> output = new LinkedList<>();
-            List<GHRepository> repositories = new LinkedList<GHRepository>();
+            List<GHRepository> repositories = new LinkedList<>();
             repositories.addAll(github.getOrganization(gitOrganization).getRepositories().values());
             int repositoryCount = repositories.size();
 
@@ -224,14 +225,42 @@ public class SlackController {
         executeAsync(callbackUrl, () -> {
             String commitMessage = message == null ? request.getTitle() : message;
             String localRepoName = UUID.randomUUID().toString();
-            File repoDir = new File("./" + localRepoName);
-            GHRepository fork = request.getRepository();
+            File localHome = new File("./" + localRepoName);
+
+            GHRepository origin = request.getRepository();
+            String targetBranch = origin.getDefaultBranch();
+            GHRepository fork = request.getHead().getRepository();
+            String forkRef = request.getHead().getRef();
+            int requestNumber = request.getNumber();
+            GitUser requestUser = request.getHead().getCommit().getCommitShortInfo().getCommitter();
+            String requestAuthor = requestUser.getName() + " <" + requestUser.getEmail() + ">";
+
+            String originUrl = "https://" + credentials.getName() + ":" + credentials.getPassword() + "@github.com/" + origin.getFullName();
             String forkUrl = "https://" + credentials.getName() + ":" + credentials.getPassword() + "@github.com/" + fork.getFullName();
-            Utils.cli(new File("."), "git clone " + forkUrl + " " + repoDir.getAbsolutePath());
 
-            boolean reallyCloned = new File(repoDir, "pom.xml").exists();
+            Utils.cli(new File("."), "git clone " + originUrl + " " + localHome.getAbsolutePath());
 
-            return success("Cloned into: `" + repoDir.getAbsolutePath() + "` (" + reallyCloned + ")");
+            Set<String> remoteRepoNames = getRemoteRepoNames(localHome);
+            String targetRemoteRepo = remoteRepoNames.contains("upstream") ? "upstream" : "origin";
+            LOG.info("Target remote repo to push: " + targetRemoteRepo);
+
+            cli(localHome, "git status");
+            cli(localHome, "git pull --all");
+
+            cli(localHome, "git checkout -b merge-pull-request " + targetBranch);
+            cli(localHome, "git pull " + forkUrl + " " + forkRef);
+
+            cli(localHome, "git checkout " + targetBranch);
+            cli(localHome, "git merge merge-pull-request");
+            cli(localHome, "git reset " + targetRemoteRepo + "/" + targetBranch);
+            cli(localHome, "git add .");
+            cli(localHome, String.format("git commit -a -m \"%s\" -m \"Closes #%s\" --author \"%s\"", message, requestNumber, requestAuthor));
+
+            // cli(localHome, "git push " + targetRemoteRepo + " " + targetBranch);
+
+            request.close();
+
+            return success("Cloned into: `" + localHome.getAbsolutePath() + "`");
         });
 
         return success("Merging " + link(request.getTitle(), request.getHtmlUrl()) + "... Please, wait");
@@ -283,6 +312,11 @@ public class SlackController {
         int idIndex = argumentsString.indexOf(arguments[1], commandIndex + arguments[0].length());
         String message = argumentsString.substring(idIndex + arguments[1].length()).trim();
         return message.isEmpty() ? null : message;
+    }
+
+    private Set<String> getRemoteRepoNames(File workDir) throws Exception {
+        List<String> output = cli(workDir, "git remote -v");
+        return output.stream().map(line -> line.split("\\s")[0]).collect(Collectors.toSet());
     }
 
 }
