@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 
 import static com.wispy.wispy.Utils.*;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -53,16 +54,22 @@ public class SlackController {
 
     @Value("${slack.token}") private String slackToken;
     @Value("${github.organization}") private String gitOrganization;
+    @Value("${issue.tracker.url}") private String issueTrackerUrl;
+    @Value("${issue.tracker.pattern}") private String issueTrackerPatternString;
 
     private Map<String, GitHub> sessions;
-    private Map<String, Map<Integer, GHPullRequest>> requests;
-    private ExecutorService executors = Executors.newFixedThreadPool(10);
-    private HttpClient callbackClient = HttpClientBuilder.create().build();
+    private Map<String, List<GHPullRequest>> requests;
+    private ExecutorService executors;
+    private HttpClient callbackClient;
+    private Pattern issuePattern;
 
     @PostConstruct
     public void init() {
         sessions = new HashMap<>();
         requests = new HashMap<>();
+        executors = Executors.newFixedThreadPool(10);
+        callbackClient = HttpClientBuilder.create().build();
+        issuePattern = Pattern.compile(issueTrackerPatternString);
     }
 
     @RequestMapping(method = GET)
@@ -151,21 +158,31 @@ public class SlackController {
                 }
             }
 
+            List<GHPullRequest> listedRequests = new LinkedList<>();
+            requests.put(user, listedRequests);
+
+            output.add("");
+            int index = 0;
             if (pullRequests.isEmpty()) {
                 output.add("No open pull requests found.");
             } else {
                 for (Entry<GHRepository, List<GHPullRequest>> entry : pullRequests.entrySet()) {
                     GHRepository repository = entry.getKey();
-                    output.add(link(repository.getName(), repository.getHtmlUrl()) + (repository.isPrivate() ? "(private)" : "(public)"));
+                    output.add(link(repository.getName(), repository.getHtmlUrl()) + " " + (repository.isPrivate() ? "(private)" : "(public)"));
                     for (GHPullRequest request : entry.getValue()) {
-                        output.add("> " + link("(diff)", request.getDiffUrl()) + " " + request.getTitle());
+                        output.add("> `" + index + "` " +
+                                        wrappedLink("diff", request.getPatchUrl()) + " " +
+                                        wrappedLink("ticket", ticketLink(request.getTitle(), request.getHead().getRef())) + " " +
+                                        request.getTitle() +
+                                        (request.getMergeable() ? "" : " `can't merge!`")
+                        );
+                        listedRequests.add(request);
                     }
                 }
             }
 
             time = System.currentTimeMillis() - time;
             output.add(0, "Searched through `" + repositoryCount + "` repositories in `" + time + " ms`.");
-            output.add("");
             return success(text(output));
         });
         return success("Looking through repositories... Please, wait.");
@@ -198,6 +215,17 @@ public class SlackController {
                 LOG.error("Failed to post to callback url: " + callbackUrl, up);
             }
         });
+    }
+
+    private String ticketLink(String title, String ref) {
+        String issue = match(issuePattern, title);
+        if (issue == null) {
+            issue = match(issuePattern, ref);
+        }
+        if (issue == null) {
+            return null;
+        }
+        return issueTrackerUrl + issue;
     }
 
 }

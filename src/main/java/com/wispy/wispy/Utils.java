@@ -6,6 +6,8 @@ import org.springframework.http.ResponseEntity;
 
 import java.net.URL;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.springframework.http.HttpStatus.OK;
 
@@ -54,15 +56,37 @@ public class Utils {
     }
 
     public static String link(String name, String url) {
+        if (url == null) {
+            return name;
+        }
         return "<" + url + "|" + name + ">";
     }
 
     public static String link(String name, URL url) {
+        if (url == null) {
+            return link(name, (String) null);
+        }
         return link(name, url.toString());
+    }
+
+    public static String wrappedLink(String name, String url) {
+        return "[" + link(name, url) + "]";
+    }
+
+    public static String wrappedLink(String name, URL url) {
+        return "[" + link(name, url) + "]";
     }
 
     public static String json(Object object) {
         return gson.toJson(object);
+    }
+
+    public static String match(Pattern pattern, String text) {
+        Matcher matcher = pattern.matcher(text);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
     }
 
 }
