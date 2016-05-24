@@ -42,6 +42,13 @@
       <artifactId>javax.servlet-api</artifactId>
     </dependency>
 
+    <!-- Integration dependencies -->
+    <dependency>
+      <groupId>org.kohsuke</groupId>
+      <artifactId>github-api</artifactId>
+      <version>1.73</version>
+    </dependency>
+
     <!-- Utility dependencies -->
     <dependency>
       <groupId>joda-time</groupId>
