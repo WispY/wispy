@@ -16,6 +16,7 @@ public class Task {
     private StringBuilder output;
     private StringBuilder log;
     private List<String> hiddenWords;
+    private boolean failed;
 
     public Task() {
         this.output = new StringBuilder();
@@ -77,6 +78,14 @@ public class Task {
 
     public List<String> getHiddenWords() {
         return hiddenWords;
+    }
+
+    public boolean isFailed() {
+        return failed;
+    }
+
+    public void setFailed(boolean failed) {
+        this.failed = failed;
     }
 
     private void addString(String message, StringBuilder builder, boolean append) {

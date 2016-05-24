@@ -46,7 +46,6 @@ public class GitLogin implements CommandProcessor {
         String name = task.getArguments()[0];
         String password = task.getArguments()[1];
         task.hide(password);
-        task.append("");
 
         task.log("logging in github as {0}", name);
         GitHub github;

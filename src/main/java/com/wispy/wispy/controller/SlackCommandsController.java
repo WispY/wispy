@@ -74,6 +74,11 @@ public class SlackCommandsController {
 
         Session session = getOrCreateSession(user);
         Task task = createTask(processor, arguments);
+        if (task.isFailed()) {
+            task.append("Failed to parse arguments. Usage: `/git {0}`", processor.commandUsage());
+            return answer(hide(task.buildOutput(), task.getHiddenWords()));
+        }
+
         try {
             processor.process(task, session);
         } catch (Exception up) {
@@ -94,16 +99,21 @@ public class SlackCommandsController {
     }
 
     private Task createTask(CommandProcessor processor, String input) {
+        Task task = new Task();
+        task.setCommand(input);
+
         Matcher matcher = Pattern.compile(processor.commandArgumentsPattern()).matcher(input);
         String[] arguments = new String[processor.argumentsCount()];
-        if (!matcher.find()) {
+        if (matcher.find()) {
             for (int index = 0; index < arguments.length; index++) {
                 arguments[index] = matcher.group(index + 1);
             }
+            task.log("successfully parsed arguments");
+        } else {
+            task.log("failed to parse command arguments");
+            task.setFailed(true);
         }
 
-        Task task = new Task();
-        task.setCommand(input);
         task.setArguments(arguments);
         return task;
     }
