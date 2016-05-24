@@ -2,9 +2,12 @@ package com.wispy.wispy;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.log4j.Logger;
 import org.springframework.http.ResponseEntity;
 
+import java.io.*;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,6 +18,7 @@ import static org.springframework.http.HttpStatus.OK;
  * @author Leonid_Poliakov
  */
 public class Utils {
+    public static final Logger LOG = Logger.getLogger(Utils.class);
     private static Gson gson = new GsonBuilder().create();
 
     public static ResponseEntity<String> badRequest(String message) {
@@ -88,5 +92,33 @@ public class Utils {
         }
         return null;
     }
+
+    public static List<String> cli(File workDirectory, String command) throws Exception {
+        LOG.info("Executing command from " + workDirectory.getAbsolutePath());
+        Process process = new ProcessBuilder("/bin/bash").directory(workDirectory).start();
+        PrintWriter input = new PrintWriter(new BufferedWriter(new OutputStreamWriter(process.getOutputStream())), true);
+        input.println(command);
+        input.println("exit");
+
+        int exitCode = process.waitFor();
+        BufferedReader output = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String line;
+        List<String> outputLines = new ArrayList<>();
+        while ((line = output.readLine()) != null) {
+            LOG.info(" - " + line);
+            outputLines.add(line);
+        }
+
+        BufferedReader error = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+        while ((line = error.readLine()) != null) {
+            LOG.error(" - " + line);
+        }
+        if (exitCode != 0) {
+            throw new RuntimeException("CLI execution failed, code: " + exitCode);
+        }
+
+        return outputLines;
+    }
+
 
 }

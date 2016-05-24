@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
@@ -47,7 +48,7 @@ public class SlackController {
     );
 
     private static String gitHelp = text(
-            "This is a development tool used to automate merging pull request with a nice looking history.",
+            "This is a development tool used to automate merging pull request with a nice looking history",
             "",
             gitUsage
     );
@@ -58,6 +59,7 @@ public class SlackController {
     @Value("${issue.tracker.pattern}") private String issueTrackerPatternString;
 
     private Map<String, GitHub> sessions;
+    private Map<String, GitCredentials> sessionCredentials;
     private Map<String, List<GHPullRequest>> requests;
     private ExecutorService executors;
     private HttpClient callbackClient;
@@ -66,6 +68,7 @@ public class SlackController {
     @PostConstruct
     public void init() {
         sessions = new HashMap<>();
+        sessionCredentials = new HashMap<>();
         requests = new HashMap<>();
         executors = Executors.newFixedThreadPool(10);
         callbackClient = HttpClientBuilder.create().build();
@@ -94,16 +97,30 @@ public class SlackController {
             return badRequest("Invalid team token");
         }
 
-        String[] arguments = argumentsString.trim().split("\\s+");
-        if (arguments[0].isEmpty()) {
+        if (argumentsString.trim().isEmpty()) {
             return success(gitHelp);
         }
+        String[] arguments = argumentsString.trim().split("\\s+");
         try {
             switch (arguments[0]) {
                 case "login":
-                    return executeLogin(user, arguments);
+                    if (arguments.length != 3) {
+                        return badRequest("Usage: `/git login name password`");
+                    }
+                    return executeLogin(user, arguments[1], arguments[2]);
                 case "list":
                     return executeList(user, callbackUrl);
+                case "merge":
+                    if (arguments.length < 2) {
+                        return badRequest("Usage: `/git merge id [message]`");
+                    }
+                    int requestId;
+                    try {
+                        requestId = Integer.valueOf(arguments[1]);
+                    } catch (NumberFormatException up) {
+                        return badRequest("Not a valid id: `" + arguments[1] + "`");
+                    }
+                    return executeMerge(user, requestId, mergeMessage(argumentsString, arguments), callbackUrl);
                 default:
                     return badRequest(text("Unknown command: `" + arguments[0], gitUsage) + "`");
             }
@@ -113,20 +130,17 @@ public class SlackController {
         }
     }
 
-    private ResponseEntity<String> executeLogin(String user, String[] arguments) throws Exception {
-        if (arguments.length != 3) {
-            return badRequest("Usage: `/git login name password`");
-        }
-
+    private ResponseEntity<String> executeLogin(String user, String name, String password) throws Exception {
         GitHub github;
         GHMyself gitUser;
         try {
-            github = GitHub.connectUsingPassword(arguments[1], arguments[2]);
+            github = GitHub.connectUsingPassword(name, password);
             gitUser = github.getMyself();
         } catch (IOException up) {
             return badRequest("Could not login: `" + up.getMessage() + "`");
         }
         sessions.put(user, github);
+        sessionCredentials.put(user, new GitCredentials(name, password));
         return success("Connected as: `" + gitUser.getName() + " (" + gitUser.getLogin() + ")`");
     }
 
@@ -164,14 +178,14 @@ public class SlackController {
             output.add("");
             int index = 0;
             if (pullRequests.isEmpty()) {
-                output.add("No open pull requests found.");
+                output.add("No open pull requests found");
             } else {
                 for (Entry<GHRepository, List<GHPullRequest>> entry : pullRequests.entrySet()) {
                     GHRepository repository = entry.getKey();
                     output.add(link(repository.getName(), repository.getHtmlUrl()) + " " + (repository.isPrivate() ? "(private)" : "(public)"));
                     for (GHPullRequest request : entry.getValue()) {
                         output.add("> `" + index + "` " +
-                                        wrappedLink("diff", request.getPatchUrl()) + " " +
+                                        wrappedLink("link", request.getHtmlUrl()) + " " +
                                         wrappedLink("ticket", ticketLink(request.getTitle(), request.getHead().getRef())) + " " +
                                         request.getTitle() +
                                         (request.getMergeable() ? "" : " `can't merge!`")
@@ -180,13 +194,45 @@ public class SlackController {
                         index++;
                     }
                 }
+                output.add("");
+                output.add("Merge with: `/git merge id [message]`");
             }
 
             time = System.currentTimeMillis() - time;
-            output.add(0, "Searched through `" + repositoryCount + "` repositories in `" + time + " ms`.");
+            output.add(0, "Looked at `" + repositoryCount + "` repositories in `" + time + " ms`");
             return success(text(output));
         });
-        return success("Looking through repositories... Please, wait.");
+        return success("Looking for pull requests... Please, wait");
+    }
+
+    private ResponseEntity<String> executeMerge(String user, int requestId, String message, String callbackUrl) throws Exception {
+        GitHub github = sessions.get(user);
+        GitCredentials credentials = sessionCredentials.get(user);
+        if (github == null || credentials == null) {
+            return badRequest("Please, log in first: `/git login name password`");
+        }
+
+        List<GHPullRequest> listedRequests = requests.get(user);
+        if (listedRequests == null) {
+            return badRequest("No pull requests were listed, run: `/git list`");
+        }
+        if (requestId < 0 || requestId >= listedRequests.size()) {
+            return badRequest("Request with id `" + requestId + "` was not listed");
+        }
+        GHPullRequest request = listedRequests.get(requestId);
+
+        executeAsync(callbackUrl, () -> {
+            String commitMessage = message == null ? request.getTitle() : message;
+            String localRepoName = UUID.randomUUID().toString();
+            File repoDir = new File("./" + localRepoName);
+            GHRepository fork = request.getRepository();
+            String forkUrl = "https://" + credentials.getName() + ":" + credentials.getPassword() + "@github.com/" + fork.getFullName();
+            Utils.cli(new File("."), "git clone " + forkUrl + " " + repoDir.getAbsolutePath());
+
+            return success("Cloned into: `" + localRepoName + "`");
+        });
+
+        return success("Merging pull request " + link(request.getTitle(), request.getHtmlUrl()) + "... Please, wait");
     }
 
     private void executeAsync(String callbackUrl, AsyncExecution execution) {
@@ -227,6 +273,16 @@ public class SlackController {
             return null;
         }
         return issueTrackerUrl + issue;
+    }
+
+    private String mergeMessage(String argumentsString, String[] arguments) {
+        if (arguments.length < 3) {
+            return null;
+        }
+        int commandIndex = argumentsString.indexOf(arguments[0]);
+        int idIndex = argumentsString.indexOf(arguments[1], commandIndex + arguments[0].length());
+        String message = argumentsString.substring(idIndex + arguments[1].length()).trim();
+        return message.isEmpty() ? null : message;
     }
 
 }
