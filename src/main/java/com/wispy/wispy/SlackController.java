@@ -123,7 +123,7 @@ public class SlackController {
                     }
                     return executeMerge(user, requestId, mergeMessage(argumentsString, arguments), callbackUrl);
                 default:
-                    return badRequest(text("Unknown command: `" + arguments[0], gitUsage) + "`");
+                    return badRequest(text("Unknown command: `" + arguments[0] + "`", gitUsage) + "`");
             }
         } catch (Exception up) {
             LOG.error("Command processing error: " + command, up);
@@ -260,11 +260,11 @@ public class SlackController {
             cli(localHome, "git add .");
             cli(localHome, String.format("git commit -a -m \"%s\" -m \"Closes #%s\" --author \"%s\"", message, requestNumber, requestAuthor));
 
-            // cli(localHome, "git push " + targetRemoteRepo + " " + targetBranch);
+            cli(localHome, "git push " + targetRemoteRepo + " " + targetBranch);
 
             request.close();
 
-            return success("Cloned into: `" + localHome.getAbsolutePath() + "`");
+            return success("Successfully merged! (more info will be added soon)");
         });
 
         return success("Merging " + link(request.getTitle(), request.getHtmlUrl()) + "... Please, wait");
