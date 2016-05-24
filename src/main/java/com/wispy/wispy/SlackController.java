@@ -155,15 +155,17 @@ public class SlackController {
                 output.add("No open pull requests found.");
             } else {
                 for (Entry<GHRepository, List<GHPullRequest>> entry : pullRequests.entrySet()) {
-                    output.add(entry.getKey().getName());
+                    GHRepository repository = entry.getKey();
+                    output.add(link(repository.getName(), repository.getHtmlUrl()) + (repository.isPrivate() ? "(private)" : "(public)"));
                     for (GHPullRequest request : entry.getValue()) {
-                        output.add("> " + request.getTitle());
+                        output.add("> " + link("(diff)", request.getDiffUrl()) + " " + request.getTitle());
                     }
                 }
             }
 
             time = System.currentTimeMillis() - time;
-            output.add(0, "Searched through `" + repositoryCount + "` repositories in `" + time + " ms`");
+            output.add(0, "Searched through `" + repositoryCount + "` repositories in `" + time + " ms`.");
+            output.add("");
             return success(text(output));
         });
         return success("Looking through repositories... Please, wait.");

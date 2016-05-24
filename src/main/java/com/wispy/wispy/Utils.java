@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.springframework.http.ResponseEntity;
 
+import java.net.URL;
 import java.util.List;
 
 import static org.springframework.http.HttpStatus.OK;
@@ -50,6 +51,14 @@ public class Utils {
             prefix = "\n";
         }
         return builder.toString();
+    }
+
+    public static String link(String name, String url) {
+        return "<" + url + "|" + name + ">";
+    }
+
+    public static String link(String name, URL url) {
+        return link(name, url.toString());
     }
 
     public static String json(Object object) {
