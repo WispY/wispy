@@ -28,10 +28,21 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 public class SlackController {
     public static final Logger LOG = Logger.getLogger(SlackController.class);
 
-    private static String gitHelp = text("Usage:",
-            "  `/git login name password` - signs you in at GitHub",
-            "  `/git list` - shows available pull requests",
-            "  `/git merge id [message]` - merges pull request by id from the list, uses request name as commit message by default");
+    private static String gitUsage = text(
+            "```",
+            "Usage:",
+            "    /git login name password  - sign in at GitHub",
+            "    /git list                 - show available pull requests",
+            "    /git merge id [message]   - merge pull request by id from the list,",
+            "                                uses request name as commit message by default",
+            "```"
+    );
+    private static String gitHelp = text(
+            "```",
+            "This is a development tool used to automate merging pull request with a nice looking history.",
+            "```",
+            gitUsage
+    );
 
     @Value("${slack.token}") private String slackToken;
 
@@ -69,12 +80,13 @@ public class SlackController {
         if (arguments.length == 0) {
             return success(gitHelp);
         }
+        LOG.info("Command: " + command);
         try {
             switch (arguments[0]) {
                 case "login":
                     return executeLogin(user, arguments);
                 default:
-                    return success(gitHelp);
+                    return badRequest(text("Unknown command: " + arguments[0], gitUsage));
             }
         } catch (Exception up) {
             LOG.error("Command processing error: " + command, up);
