@@ -258,7 +258,7 @@ public class SlackController {
             cli(localHome, "git merge merge-pull-request");
             cli(localHome, "git reset " + targetRemoteRepo + "/" + targetBranch);
             cli(localHome, "git add .");
-            cli(localHome, String.format("git commit -a -m \"%s\" -m \"Closes #%s\" --author \"%s\"", message, requestNumber, requestAuthor));
+            cli(localHome, String.format("git commit -a -m \"%s\" -m \"Closes #%s\" --author \"%s\"", commitMessage, requestNumber, requestAuthor));
 
             cli(localHome, "git push " + targetRemoteRepo + " " + targetBranch);
 
