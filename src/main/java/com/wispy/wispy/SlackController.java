@@ -1,5 +1,9 @@
 package com.wispy.wispy;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.log4j.Logger;
 import org.kohsuke.github.*;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,10 +14,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.wispy.wispy.Utils.*;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -47,6 +52,8 @@ public class SlackController {
 
     private Map<String, GitHub> sessions;
     private Map<String, Map<Integer, GHPullRequest>> requests;
+    private ExecutorService executors = Executors.newFixedThreadPool(1);
+    private HttpClient callbackClient = HttpClientBuilder.create().build();
 
     @PostConstruct
     public void init() {
@@ -67,7 +74,7 @@ public class SlackController {
             @RequestParam("user_id") String user,
             @RequestParam("command") String command,
             @RequestParam("text") String argumentsString,
-            HttpServletRequest request
+            @RequestParam("response_url") String callbackUrl
     ) {
         if (!token.equals(slackToken)) {
             return badRequest("Invalid team token");
@@ -85,9 +92,9 @@ public class SlackController {
                 case "login":
                     return executeLogin(user, arguments);
                 case "list":
-                    return executeList(user);
+                    return executeList(user, callbackUrl);
                 default:
-                    return badRequest(text("Unknown command: " + arguments[0], gitUsage));
+                    return badRequest(text("Unknown command: `" + arguments[0], gitUsage) + "`");
             }
         } catch (Exception up) {
             LOG.error("Command processing error: " + command, up);
@@ -112,48 +119,71 @@ public class SlackController {
         return success("Connected as: `" + gitUser.getName() + " (" + gitUser.getLogin() + ")`");
     }
 
-    private ResponseEntity<String> executeList(String user) throws Exception {
+    private ResponseEntity<String> executeList(String user, String callbackUrl) throws Exception {
         GitHub github = sessions.get(user);
         if (github == null) {
             return badRequest("Please, log in first: `/git login name password`");
         }
-        List<String> output = new LinkedList<>();
 
-        Map<String, GHRepository> personalRepositories = github.getMyself().getRepositories();
-        Map<String, GHOrganization> organizations = github.getMyOrganizations();
+        executeAsync(callbackUrl, () -> {
+            List<String> output = new LinkedList<>();
+            Map<String, GHRepository> personalRepositories = github.getMyself().getRepositories();
+            Map<String, GHOrganization> organizations = github.getMyOrganizations();
 
-        List<GHRepository> repositories = new LinkedList<>();
-        for (Entry<String, GHOrganization> entry : organizations.entrySet()) {
-            repositories.addAll(entry.getValue().getRepositories().values());
-        }
-        repositories.addAll(personalRepositories.values());
-        output.add("Searched through: `" + repositories.size() + "` repositories.");
-
-        Map<GHRepository, List<GHPullRequest>> pullRequests = new TreeMap<>((f, s) -> f.getName().compareTo(s.getName()));
-
-        Iterator<GHRepository> iterator = repositories.iterator();
-        while (iterator.hasNext()) {
-            GHRepository repository = iterator.next();
-            List<GHPullRequest> requests = repository.getPullRequests(GHIssueState.OPEN);
-            if (requests.isEmpty()) {
-                iterator.remove();
-            } else {
-                Collections.sort(requests, (f, s) -> Integer.compare(f.getNumber(), s.getNumber()));
-                pullRequests.put(repository, requests);
+            List<GHRepository> repositories = new LinkedList<>();
+            for (Entry<String, GHOrganization> entry : organizations.entrySet()) {
+                repositories.addAll(entry.getValue().getRepositories().values());
             }
-        }
+            repositories.addAll(personalRepositories.values());
+            output.add("Searched through: `" + repositories.size() + "` repositories.");
 
-        if (pullRequests.isEmpty()) {
-            output.add("No open pull requests found.");
-        } else {
-            for (Entry<GHRepository, List<GHPullRequest>> entry : pullRequests.entrySet()) {
-                output.add("`" + entry.getKey().getName() + "`");
-                for (GHPullRequest request : entry.getValue()) {
-                    output.add("  " + request.getTitle());
+            Map<GHRepository, List<GHPullRequest>> pullRequests = new TreeMap<>((f, s) -> f.getName().compareTo(s.getName()));
+
+            Iterator<GHRepository> iterator = repositories.iterator();
+            while (iterator.hasNext()) {
+                GHRepository repository = iterator.next();
+                List<GHPullRequest> requests = repository.getPullRequests(GHIssueState.OPEN);
+                if (requests.isEmpty()) {
+                    iterator.remove();
+                } else {
+                    Collections.sort(requests, (f, s) -> Integer.compare(f.getNumber(), s.getNumber()));
+                    pullRequests.put(repository, requests);
                 }
             }
-        }
-        return success(text(output));
+
+            if (pullRequests.isEmpty()) {
+                output.add("No open pull requests found.");
+            } else {
+                for (Entry<GHRepository, List<GHPullRequest>> entry : pullRequests.entrySet()) {
+                    output.add("`" + entry.getKey().getName() + "`");
+                    for (GHPullRequest request : entry.getValue()) {
+                        output.add("  " + request.getTitle());
+                    }
+                }
+            }
+            return success(text(output));
+        });
+        return success("Looking through repositories... Please, wait.");
+    }
+
+    private void executeAsync(String callbackUrl, AsyncExecution execution) {
+        executors.execute(() -> {
+            ResponseEntity<String> response;
+            try {
+                response = execution.execute();
+            } catch (Exception up) {
+                LOG.error("Command processing error", up);
+                response = internalError(up);
+            }
+
+            HttpPost post = new HttpPost(callbackUrl);
+            post.setEntity(new StringEntity(response.getBody(), "UTF-8"));
+            try {
+                callbackClient.execute(post);
+            } catch (IOException up) {
+                LOG.error("Failed to post to callback url: " + callbackUrl, up);
+            }
+        });
     }
 
 }
