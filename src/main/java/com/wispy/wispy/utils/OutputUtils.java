@@ -21,7 +21,9 @@ public class OutputUtils {
 
     public static String hide(String text, List<String> words) {
         for (String word : words) {
-            text = text.replaceAll(word, "*****");
+            if (word != null && !word.trim().isEmpty()) {
+                text = text.replaceAll(word, "*****");
+            }
         }
         return text;
     }
