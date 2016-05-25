@@ -14,7 +14,7 @@ import java.io.IOException;
  */
 @Component
 @Order(0)
-public class GitLogin implements CommandProcessor {
+public class GitLoginProcessor implements CommandProcessor {
 
     @Override
     public String commandUsage() {

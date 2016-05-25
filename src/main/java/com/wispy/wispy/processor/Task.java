@@ -13,10 +13,12 @@ import static com.wispy.wispy.utils.OutputUtils.format;
 public class Task {
     private String command;
     private String[] arguments;
+
     private StringBuilder output;
     private StringBuilder log;
     private List<String> hiddenWords;
     private boolean failed;
+    private AsyncProcessor async;
 
     public Task() {
         this.output = new StringBuilder();
@@ -86,6 +88,14 @@ public class Task {
 
     public void setFailed(boolean failed) {
         this.failed = failed;
+    }
+
+    public AsyncProcessor getAsync() {
+        return async;
+    }
+
+    public void setAsync(AsyncProcessor async) {
+        this.async = async;
     }
 
     private void addString(String message, StringBuilder builder, boolean append) {

@@ -46,7 +46,7 @@ public class SlackCommandsController {
         builder.append("Usage:\n");
         for (CommandProcessor processor : processors) {
             builder.append("`/git ").append(processor.commandUsage()).append("`\n")
-                    .append("       ").append(processor.commandDescription()).append("\n");
+                    .append("> ").append(processor.commandDescription()).append("\n");
         }
         usage = builder.toString();
         description = "This is a development tool used to automate merging pull request with a nice looking history";
@@ -77,13 +77,13 @@ public class SlackCommandsController {
             return answer("Unknown command\n" + usage);
         }
 
-        Session session = getOrCreateSession(user);
         Task task = createTask(processor, arguments);
         if (task.isFailed()) {
-            task.append("Failed to parse arguments. Usage: `/git {0}`", processor.commandUsage());
+            task.append("Failed to parse arguments. Usage: `{0} {1}`", command, processor.commandUsage());
             return answer(hide(task.buildOutput(), task.getHiddenWords()));
         }
 
+        Session session = getOrCreateSession(user);
         try {
             processor.process(task, session);
         } catch (Exception up) {
@@ -124,13 +124,10 @@ public class SlackCommandsController {
     }
 
     private CommandProcessor pickProcessor(String input) {
-        for (Entry<CommandProcessor, Pattern> entry : processors.entrySet()) {
-            Matcher matcher = entry.getValue().matcher(input);
-            if (matcher.matches()) {
-                return entry.getKey();
-            }
-        }
-        return null;
+        return processors.entrySet().stream()
+                .filter(entry -> entry.getValue().matcher(input).matches())
+                .map(Entry::getKey)
+                .findFirst().get();
     }
 
 }
