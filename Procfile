@@ -1,1 +1,1 @@
-web: java -jar target/server.jar --server.port=$PORT --websockets.port=$PORT_WEBSOCKETS
+web: java -jar target/server.jar --server.port=$PORT

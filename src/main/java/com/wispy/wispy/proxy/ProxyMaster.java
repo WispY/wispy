@@ -22,6 +22,7 @@ public class ProxyMaster {
 
     @Value("${proxy.mode}") private String mode;
     @Value("${proxy.master}") private String master;
+    @Value("${server.port:7777}") private int port;
 
     private Session session;
     private Gson gson;
@@ -34,10 +35,10 @@ public class ProxyMaster {
             return;
         }
 
-        LOG.info("Starting proxy master");
+        LOG.info("Starting proxy master at: master = " + master + ", port = " + port);
         gson = new Gson();
         Endpoint.dispatcher = this;
-        server = new Server(master, 7777, "", Endpoint.class);
+        server = new Server(master, port, "", Endpoint.class);
 
         try {
             server.start();
@@ -82,7 +83,7 @@ public class ProxyMaster {
 
     private void close(Session session, CloseReason closeReason) {
         LOG.info("Slave disconnected: session =  " + session.getId() + ", reason = " + closeReason);
-        session = null;
+        this.session = null;
     }
 
     @ServerEndpoint("")
