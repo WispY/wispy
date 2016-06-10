@@ -5,7 +5,6 @@ import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import javax.websocket.*;
@@ -19,7 +18,7 @@ import java.net.URI;
 public class ProxySlave {
     public static final Logger LOG = Logger.getLogger(ProxySlave.class);
 
-    @Value("${proxy.enabled}") private boolean enabled;
+    @Value("${proxy.mode}") private String mode;
     @Value("${proxy.master}") private String master;
     @Autowired private SlackCommandsController controller;
 
@@ -39,7 +38,7 @@ public class ProxySlave {
     }
 
     private boolean isSlave() {
-        return enabled && StringUtils.hasText(master);
+        return mode.equals("slave");
     }
 
     private void receive(String message) {

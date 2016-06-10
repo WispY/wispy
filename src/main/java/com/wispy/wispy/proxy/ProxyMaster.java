@@ -6,7 +6,6 @@ import org.apache.log4j.Logger;
 import org.glassfish.tyrus.server.Server;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -21,7 +20,7 @@ import java.util.concurrent.Future;
 public class ProxyMaster {
     public static final Logger LOG = Logger.getLogger(ProxyMaster.class);
 
-    @Value("${proxy.enabled}") private boolean enabled;
+    @Value("${proxy.mode}") private String mode;
     @Value("${proxy.master}") private String master;
 
     private Session session;
@@ -38,7 +37,7 @@ public class ProxyMaster {
         LOG.info("Starting proxy master");
         gson = new Gson();
         Endpoint.dispatcher = this;
-        server = new Server("localhost", 7777, "", Endpoint.class);
+        server = new Server(master, 7777, "", Endpoint.class);
 
         try {
             server.start();
@@ -53,7 +52,7 @@ public class ProxyMaster {
     }
 
     public boolean isMaster() {
-        return enabled && StringUtils.isEmpty(master);
+        return mode.equals("master");
     }
 
     private void open(Session session) {
