@@ -9,8 +9,6 @@ import org.springframework.util.StringUtils;
 
 import java.util.*;
 
-import static com.wispy.wispy.Utils.*;
-
 /**
  * @author WispY
  */
@@ -94,34 +92,35 @@ public class GitListProcessor implements CommandProcessor {
             }
 
             List<GHPullRequest> listedRequests = new LinkedList<>();
-            requests.put(user, listedRequests);
-
-            output.add("");
-            int index = 0;
-            if (pullRequests.isEmpty()) {
-                output.add("No open pull requests found");
-            } else {
-                for (Map.Entry<GHRepository, List<GHPullRequest>> entry : pullRequests.entrySet()) {
-                    GHRepository repository = entry.getKey();
-                    output.add(link(repository.getName(), repository.getHtmlUrl()) + " " + (repository.isPrivate() ? "(private)" : "(public)"));
-                    for (GHPullRequest request : entry.getValue()) {
-                        output.add("> `" + index + "` " +
-                                wrappedLink("link", request.getHtmlUrl()) + " " +
-                                wrappedLink("ticket", ticketLink(request.getTitle(), request.getHead().getRef())) + " " +
-                                request.getTitle() +
-                                (request.getMergeable() ? "" : " `can't merge!`")
-                        );
-                        listedRequests.add(request);
-                        index++;
-                    }
-                }
-                output.add("");
-                output.add("Merge with: `/git merge id [message]`");
-            }
-
-            time = System.currentTimeMillis() - time;
-            output.add(0, "Looked at `" + repositoryCount + "` repositories in `" + time + " ms`");
-            return success(text(output));
+//            requests.put(user, listedRequests);
+//
+//            output.add("");
+//            int index = 0;
+//            if (pullRequests.isEmpty()) {
+//                output.add("No open pull requests found");
+//            } else {
+//                for (Map.Entry<GHRepository, List<GHPullRequest>> entry : pullRequests.entrySet()) {
+//                    GHRepository repository = entry.getKey();
+//                    output.add(link(repository.getName(), repository.getHtmlUrl()) + " " + (repository.isPrivate() ? "(private)" : "(public)"));
+//                    for (GHPullRequest request : entry.getValue()) {
+//                        output.add("> `" + index + "` " +
+//                                wrappedLink("link", request.getHtmlUrl()) + " " +
+//                                wrappedLink("ticket", ticketLink(request.getTitle(), request.getHead().getRef())) + " " +
+//                                request.getTitle() +
+//                                (request.getMergeable() ? "" : " `can't merge!`")
+//                        );
+//                        listedRequests.add(request);
+//                        index++;
+//                    }
+//                }
+//                output.add("");
+//                output.add("Merge with: `/git merge id [message]`");
+//            }
+//
+//            time = System.currentTimeMillis() - time;
+//            output.add(0, "Looked at `" + repositoryCount + "` repositories in `" + time + " ms`");
+//            return success(text(output));
+            return;
         });
         task.log("async task for listing created");
         task.append("Looking for pull requests... Please, wait");
