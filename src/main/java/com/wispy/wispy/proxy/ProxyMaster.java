@@ -22,7 +22,7 @@ public class ProxyMaster {
 
     @Value("${proxy.mode}") private String mode;
     @Value("${proxy.master}") private String master;
-    @Value("${server.port:7777}") private int port;
+    @Value("${proxy.port:7777}") private int port;
 
     private Session session;
     private Gson gson;
