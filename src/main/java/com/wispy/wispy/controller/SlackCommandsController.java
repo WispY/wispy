@@ -2,7 +2,6 @@ package com.wispy.wispy.controller;
 
 import com.wispy.wispy.processor.CommandProcessor;
 import com.wispy.wispy.processor.Task;
-import com.wispy.wispy.proxy.ProxyMaster;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,8 +39,6 @@ public class SlackCommandsController {
 
     @Value("${slack.token}") private String slackToken;
 
-    @Autowired private ProxyMaster proxy;
-
     @Autowired
     public void setProcessors(List<CommandProcessor> processors) {
         this.processors = processors.stream().collect(toMap(p -> p, p -> compile("^" + p.commandPattern() + "$")));
@@ -69,10 +66,6 @@ public class SlackCommandsController {
             @RequestParam("text") String arguments,
             @RequestParam("response_url") String callback
     ) {
-        if (proxy.isMaster()) {
-            return proxy.sendToClient(token, user, command, arguments, callback);
-        }
-
         if (!token.equals(slackToken)) {
             return answer("Invalid team token");
         }
