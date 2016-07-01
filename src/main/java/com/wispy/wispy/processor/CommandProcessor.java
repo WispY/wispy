@@ -15,6 +15,8 @@ public interface CommandProcessor {
 
     String commandArgumentsPattern();
 
+    boolean hardMatch();
+
     int argumentsCount();
 
     void process(Task task, Session session) throws Exception;

@@ -13,8 +13,7 @@ import java.util.*;
  * @author WispY
  */
 @Component
-@Order(1)
-public class GitListProcessor implements CommandProcessor {
+public class GitMergeProcessor implements CommandProcessor {
 
     @Value("${github.organization}") private String defaultOrganization;
 
@@ -36,6 +35,11 @@ public class GitListProcessor implements CommandProcessor {
     @Override
     public String commandArgumentsPattern() {
         return "list\\s*(\\S*)";
+    }
+
+    @Override
+    public boolean hardMatch() {
+        return false;
     }
 
     @Override
