@@ -1,5 +1,6 @@
 package com.wispy.wispy.controller;
 
+import com.wispy.wispy.SlackAnswer;
 import com.wispy.wispy.processor.CommandProcessor;
 import com.wispy.wispy.processor.Task;
 import org.apache.log4j.Logger;
@@ -27,7 +28,7 @@ public class SlackCommandsController {
 
     @RequestMapping(method = POST)
     @ResponseBody
-    public String process(
+    public SlackAnswer process(
             @RequestParam("token") String token,
             @RequestParam("user_id") String user,
             @RequestParam("command") String command,
