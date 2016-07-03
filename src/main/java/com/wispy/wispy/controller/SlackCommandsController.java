@@ -49,7 +49,7 @@ public class SlackCommandsController {
 
         Session session = sessionService.getOrCreateSession(user);
         if (StringUtils.isEmpty(input)) {
-            String[] header = session.isOngoingInteraction()
+            String[] header = session.isInteracting()
                     ? new String[]{"Current options:"}
                     : new String[]{"This is a tool designed to simplify a pretty Git flow on top of GitHub.", "Here is what you can do with it right now:"};
             Task task = usageTask(session, input, header);

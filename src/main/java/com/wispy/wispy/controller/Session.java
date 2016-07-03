@@ -15,7 +15,7 @@ public class Session {
     private Map<String, Object> storage;
     private Task currentTask;
     private List<Command> commands;
-    private boolean ongoingInteraction;
+    private boolean interacting;
 
     public Session() {
         storage = new HashMap<>();
@@ -50,11 +50,11 @@ public class Session {
         return commands;
     }
 
-    public boolean isOngoingInteraction() {
-        return ongoingInteraction;
+    public boolean isInteracting() {
+        return interacting;
     }
 
-    public void setOngoingInteraction(boolean ongoingInteraction) {
-        this.ongoingInteraction = ongoingInteraction;
+    public void setInteracting(boolean interacting) {
+        this.interacting = interacting;
     }
 }
