@@ -1,6 +1,7 @@
 package com.wispy.wispy.utils;
 
 import com.wispy.wispy.SlackAnswer;
+import com.wispy.wispy.processor.Task;
 import org.apache.log4j.Logger;
 
 import java.text.MessageFormat;
@@ -25,9 +26,11 @@ public class OutputUtils {
         return text;
     }
 
-    public static SlackAnswer answer(String text) {
-        SlackAnswer answer = new SlackAnswer();
-        answer.setText(text);
-        return answer;
+    public static SlackAnswer plain(String text) {
+        return SlackAnswer.answer().text(text);
+    }
+
+    public static SlackAnswer plain(Task task) {
+        return SlackAnswer.answer().text(task.buildOutput());
     }
 }

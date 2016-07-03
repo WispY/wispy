@@ -1,5 +1,6 @@
 package com.wispy.wispy;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -9,19 +10,29 @@ public class SlackAnswer {
     private String text;
     private List<SlackAttachment> attachments;
 
-    public String getText() {
-        return text;
+    public SlackAnswer() {
+        attachments = new LinkedList<>();
     }
 
-    public void setText(String text) {
-        this.text = text;
+    public String getText() {
+        return text;
     }
 
     public List<SlackAttachment> getAttachments() {
         return attachments;
     }
 
-    public void setAttachments(List<SlackAttachment> attachments) {
-        this.attachments = attachments;
+    public SlackAnswer text(String text) {
+        this.text = text;
+        return this;
     }
+
+    public void attach(SlackAttachment attachment) {
+        attachments.add(attachment);
+    }
+
+    public static SlackAnswer answer() {
+        return new SlackAnswer();
+    }
+
 }

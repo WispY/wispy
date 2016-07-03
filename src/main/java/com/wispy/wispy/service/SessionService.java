@@ -9,8 +9,6 @@ import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.wispy.wispy.processor.Command.CommandBuilder.builder;
-
 /**
  * @author WispY
  */
@@ -19,6 +17,7 @@ public class SessionService {
     public static final Logger LOG = Logger.getLogger(SessionService.class);
 
     @Autowired private LoginService loginService;
+    @Autowired private LogService logService;
 
     private Map<String, Session> sessions;
 
@@ -38,22 +37,7 @@ public class SessionService {
     }
 
     private void fillCommands(Session session) {
-        session.addCommand(builder()
-                .usage("login {name} {password}")
-                .description("sign in at GitHub")
-                .pattern("login.*")
-                .argumentsCount(2)
-                .argumentsPattern("login (\\S+) (\\S+)")
-                .handler(loginService::login)
-                .build());
-
-        //session.addCommand(builder()
-        //        .usage("logs {page}")
-        //        .description("display previous command logs")
-        //        .pattern("logs.*")
-        //        .argumentsCount(1)
-        //        .argumentsPattern("logs ?(\\d+)")
-        //        .handler(this::)
-        //        .build());
+        loginService.addCommand(session);
+        logService.addCommand(session);
     }
 }

@@ -21,24 +21,6 @@ public class Utils {
     public static final Logger LOG = Logger.getLogger(Utils.class);
     private static Gson gson = new GsonBuilder().create();
 
-    public static ResponseEntity<String> badRequest(String message) {
-        return success(message);
-    }
-
-    public static ResponseEntity<String> internalError(Throwable throwable) {
-        return success("Internal error: `" + throwable.getMessage() + "`");
-    }
-
-    public static ResponseEntity<String> success(String message) {
-        return new ResponseEntity<>(json(answer(message)), OK);
-    }
-
-    public static SlackAnswer answer(String text) {
-        SlackAnswer answer = new SlackAnswer();
-        answer.setText(text);
-        return answer;
-    }
-
     public static String text(List<String> lines) {
         StringBuilder builder = new StringBuilder();
         String prefix = "";

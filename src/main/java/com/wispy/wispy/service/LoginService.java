@@ -10,12 +10,25 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static com.wispy.wispy.processor.Command.CommandBuilder.builder;
+
 /**
  * @author WispY
  */
 @Component
 public class LoginService {
     public static final Logger LOG = Logger.getLogger(LoginService.class);
+
+    public void addCommand(Session session) {
+        session.addCommand(builder()
+                .usage("login {name} {password}")
+                .description("sign in at GitHub")
+                .pattern("login.*")
+                .argumentsCount(2)
+                .argumentsPattern("login (\\S+) (\\S+)")
+                .handler(this::login)
+                .build());
+    }
 
     public void login(Task task, Session session) throws Exception {
         String name = task.getArguments()[0];

@@ -14,8 +14,8 @@ import java.util.*;
  * @author WispY
  */
 @Component
-public class PullRequestMergeService {
-    public static final Logger LOG = Logger.getLogger(PullRequestMergeService.class);
+public class MergeService {
+    public static final Logger LOG = Logger.getLogger(MergeService.class);
 
     @Value("${github.organization}") private String defaultOrganization;
 
