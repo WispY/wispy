@@ -36,7 +36,9 @@ public class OutputUtils {
         return SlackAnswer.answer()
                 .text(task.buildOutput())
                 .attach(attachment()
+                        .fallback("abc")
                         .text("abc")
+                        .color("danger")
                         .timestamp((int) (System.currentTimeMillis() / 1000)));
     }
 }
