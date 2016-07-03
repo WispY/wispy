@@ -58,7 +58,7 @@ public class SlackCommandsController {
 
         Command command = pickCommand(session, input);
         if (command == null) {
-            Task task = usageTask(session, input, format("Command not recognized '{0}', your current options:", input));
+            Task task = usageTask(session, input, format("Command not recognized ({0}), your current options:", input));
             return plain(task);
         }
 
