@@ -35,6 +35,8 @@ public class OutputUtils {
     public static SlackAnswer plain(Task task) {
         return SlackAnswer.answer()
                 .text(task.buildOutput())
-                .attach(attachment().timestamp((int) (System.currentTimeMillis() / 1000)));
+                .attach(attachment()
+                        .text("abc")
+                        .timestamp((int) (System.currentTimeMillis() / 1000)));
     }
 }
