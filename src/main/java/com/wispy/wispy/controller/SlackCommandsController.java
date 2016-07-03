@@ -31,6 +31,7 @@ public class SlackCommandsController {
     public static final Logger LOG = Logger.getLogger(SlackCommandsController.class);
 
     @Value("${slack.token}") private String slackToken;
+    @Value("${slack.command}") private String commandPrefix;
 
     @Autowired private SessionService sessionService;
 
@@ -47,6 +48,8 @@ public class SlackCommandsController {
             return plain("Invalid team token");
         }
 
+        input = input.replace(commandPrefix, "").trim();
+
         Session session = sessionService.getOrCreateSession(user);
         if (!StringUtils.hasText(input)) {
             String[] header = session.isInteracting()
@@ -58,7 +61,7 @@ public class SlackCommandsController {
 
         Command command = pickCommand(session, input);
         if (command == null) {
-            Task task = usageTask(session, input, format("Command not recognized ({0}), your current options:", input));
+            Task task = usageTask(session, input, format("Command not recognized, your current options:", input));
             return plain(task);
         }
 
