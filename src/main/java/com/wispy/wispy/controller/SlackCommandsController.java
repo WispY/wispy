@@ -31,7 +31,6 @@ public class SlackCommandsController {
     public static final Logger LOG = Logger.getLogger(SlackCommandsController.class);
 
     @Value("${slack.token}") private String slackToken;
-    @Value("${slack.command}") private String commandPrefix;
 
     @Autowired private SessionService sessionService;
 
@@ -40,29 +39,26 @@ public class SlackCommandsController {
     public SlackAnswer process(
             @RequestParam("token") String token,
             @RequestParam("user_id") String user,
-            @RequestParam("command") String input,
+            @RequestParam("command") String slashCommand,
             @RequestParam("text") String arguments,
             @RequestParam("response_url") String callback
     ) {
-        LOG.info("input: " + input);
         if (!token.equals(slackToken)) {
             return plain("Invalid team token");
         }
 
-        input = input.replace(commandPrefix, "").trim();
-
         Session session = sessionService.getOrCreateSession(user);
-        if (!StringUtils.hasText(input)) {
+        if (!StringUtils.hasText(arguments)) {
             String[] header = session.isInteracting()
                     ? new String[]{"Current options:"}
                     : new String[]{"This is a tool designed to simplify a pretty Git flow on top of GitHub.", "Here is what you can do with it right now:"};
-            Task task = usageTask(session, input, header);
+            Task task = usageTask(session, slashCommand, header);
             return plain(task);
         }
 
-        Command command = pickCommand(session, input);
+        Command command = pickCommand(session, arguments);
         if (command == null) {
-            Task task = usageTask(session, input, format("Command not recognized, your current options:", input));
+            Task task = usageTask(session, arguments, format("Command not recognized, your current options:", arguments));
             return plain(task);
         }
 
