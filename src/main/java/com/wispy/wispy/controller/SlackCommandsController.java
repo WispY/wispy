@@ -44,6 +44,7 @@ public class SlackCommandsController {
             @RequestParam("text") String arguments,
             @RequestParam("response_url") String callback
     ) {
+        LOG.info("input: " + input);
         if (!token.equals(slackToken)) {
             return plain("Invalid team token");
         }
