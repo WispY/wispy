@@ -31,6 +31,7 @@ public class SlackCommandsController {
     public static final Logger LOG = Logger.getLogger(SlackCommandsController.class);
 
     @Value("${slack.token}") private String slackToken;
+    @Value("${slack.command}") private String slackCommand;
 
     @Autowired private SessionService sessionService;
 
@@ -97,7 +98,7 @@ public class SlackCommandsController {
         Task task = new Task();
         task.setCommand(input);
         Arrays.stream(header).forEach(task::append);
-        session.getCommands().stream().forEach(command -> task.append(format("`{0}` {1}", command.getUsage(), command.getDescription())));
+        session.getCommands().stream().forEach(command -> task.append(format("`{0} {1}` {2}", slackCommand, command.getUsage(), command.getDescription())));
         return task;
     }
 

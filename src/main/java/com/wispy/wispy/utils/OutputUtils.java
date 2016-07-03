@@ -7,6 +7,8 @@ import org.apache.log4j.Logger;
 import java.text.MessageFormat;
 import java.util.List;
 
+import static com.wispy.wispy.SlackAttachment.attachment;
+
 /**
  * @author WispY
  */
@@ -31,6 +33,8 @@ public class OutputUtils {
     }
 
     public static SlackAnswer plain(Task task) {
-        return SlackAnswer.answer().text(task.buildOutput());
+        return SlackAnswer.answer()
+                .text(task.buildOutput())
+                .attach(attachment().timestamp((int) (System.currentTimeMillis() / 1000)));
     }
 }

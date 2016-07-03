@@ -27,8 +27,9 @@ public class SlackAnswer {
         return this;
     }
 
-    public void attach(SlackAttachment attachment) {
+    public SlackAnswer attach(SlackAttachment attachment) {
         attachments.add(attachment);
+        return this;
     }
 
     public static SlackAnswer answer() {
