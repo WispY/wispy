@@ -62,7 +62,7 @@ public class SlackCommandsController {
 
         Optional<Command> command = pickCommand(session, arguments);
         if (!command.isPresent()) {
-            Task task = usageTask(session, arguments, "Command not found", format("Command not recognized, your current options:", arguments));
+            Task task = usageTask(session, arguments, "Command not found", format("Your current options:", arguments));
             return plain(task);
         }
         return plain(format("Executing: `{0}`", command.get().getUsage()));

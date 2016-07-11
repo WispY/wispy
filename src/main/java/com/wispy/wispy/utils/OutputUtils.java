@@ -26,7 +26,7 @@ public class OutputUtils {
     }
 
     public static SlackAnswer plain(Task task) {
-        String content = format("> {0}\n{1}", task.getStatusLine(), task.buildOutput());
+        String content = format("> _*{0}*_\n{1}", task.getStatusLine(), task.buildOutput());
         content = hide(content, task.getHiddenWords());
         return SlackAnswer.answer().text(content);
     }
