@@ -15,8 +15,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static com.wispy.wispy.utils.OutputUtils.format;
 import static com.wispy.wispy.utils.OutputUtils.plain;
@@ -52,26 +55,25 @@ public class SlackCommandsController {
         if (!StringUtils.hasText(arguments)) {
             String[] header = session.isInteracting()
                     ? new String[]{"Current options:"}
-                    : new String[]{"This is a tool designed to simplify a pretty Git flow on top of GitHub.", "Here is what you can do with it right now:"};
+                    : new String[]{"This tool makes GitHub history pretty.", "Here are your options:"};
             Task task = usageTask(session, slashCommand, header);
             return plain(task);
         }
 
-        Command command = pickCommand(session, arguments);
-        if (command == null) {
+        Optional<Command> command = pickCommand(session, arguments);
+        if (!command.isPresent()) {
             Task task = usageTask(session, arguments, format("Command not recognized, your current options:", arguments));
             return plain(task);
         }
-
-        return plain("Executing:" + command.getUsage());
+        return plain("Executing:" + command.get().getUsage());
     }
 
-    private Command pickCommand(Session session, String input) {
-        return session.getCommands().stream()
-                .filter(Command::isHardMatch)
-                .filter(command -> input.matches(command.getPattern()))
-                .findFirst()
-                .orElse(null);
+    private Optional<Command> pickCommand(Session session, String input) {
+        List<Command> commands = session.getCommands();
+        return Stream.concat(
+                commands.stream().filter(Command::isHardMatch),
+                commands.stream().filter(command -> !command.isHardMatch())
+        ).filter(command -> input.matches(command.getPattern())).findFirst();
     }
 
     private Task createTask(CommandProcessor processor, String input) {
