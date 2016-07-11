@@ -56,16 +56,16 @@ public class SlackCommandsController {
             String[] header = session.isInteracting()
                     ? new String[]{"Current options:"}
                     : new String[]{"This tool makes GitHub history pretty.", "Here are your options:"};
-            Task task = usageTask(session, slashCommand, header);
+            Task task = usageTask(session, slashCommand, "Showing usage", header);
             return plain(task);
         }
 
         Optional<Command> command = pickCommand(session, arguments);
         if (!command.isPresent()) {
-            Task task = usageTask(session, arguments, format("Command not recognized, your current options:", arguments));
+            Task task = usageTask(session, arguments, "Command not found", format("Command not recognized, your current options:", arguments));
             return plain(task);
         }
-        return plain("Executing:" + command.get().getUsage());
+        return plain(format("Executing: `{0}`", command.get().getUsage()));
     }
 
     private Optional<Command> pickCommand(Session session, String input) {
@@ -96,9 +96,10 @@ public class SlackCommandsController {
         return task;
     }
 
-    private Task usageTask(Session session, String input, String... header) {
+    private Task usageTask(Session session, String input, String statusLine, String... header) {
         Task task = new Task();
         task.setCommand(input);
+        task.setStatusLine(statusLine);
         Arrays.stream(header).forEach(task::append);
         session.getCommands().stream().forEach(command -> task.append(format("`{0} {1}` {2}", slackCommand, command.getUsage(), command.getDescription())));
         return task;

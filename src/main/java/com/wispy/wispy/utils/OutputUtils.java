@@ -7,8 +7,6 @@ import org.apache.log4j.Logger;
 import java.text.MessageFormat;
 import java.util.List;
 
-import static com.wispy.wispy.SlackAttachment.attachment;
-
 /**
  * @author WispY
  */
@@ -20,12 +18,7 @@ public class OutputUtils {
     }
 
     public static String hide(String text, List<String> words) {
-        for (String word : words) {
-            if (word != null && !word.trim().isEmpty()) {
-                text = text.replaceAll(word, "*****");
-            }
-        }
-        return text;
+        return words.stream().reduce(text, (source, word) -> source.replaceAll(word, "***"));
     }
 
     public static SlackAnswer plain(String text) {
@@ -33,12 +26,8 @@ public class OutputUtils {
     }
 
     public static SlackAnswer plain(Task task) {
-        return SlackAnswer.answer()
-                .text(task.buildOutput())
-                .attach(attachment()
-                        .fallback("abc")
-                        .text("abc")
-                        .color("danger")
-                        .timestamp((int) (System.currentTimeMillis() / 1000)));
+        String content = format("> {0}\n{1}", task.getStatusLine(), task.buildOutput());
+        content = hide(content, task.getHiddenWords());
+        return SlackAnswer.answer().text(content);
     }
 }

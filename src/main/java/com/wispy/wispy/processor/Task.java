@@ -16,6 +16,7 @@ public class Task {
 
     private StringBuilder output;
     private StringBuilder log;
+    private String statusLine;
     private List<String> hiddenWords;
     private boolean failed;
     private AsyncProcessor async;
@@ -98,6 +99,14 @@ public class Task {
         this.async = async;
     }
 
+    public String getStatusLine() {
+        return statusLine;
+    }
+
+    public void setStatusLine(String statusLine) {
+        this.statusLine = statusLine;
+    }
+
     private void addString(String message, StringBuilder builder, boolean append) {
         if (append) {
             if (builder.length() > 0) {
@@ -111,4 +120,5 @@ public class Task {
             builder.insert(0, message);
         }
     }
+
 }
